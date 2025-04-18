@@ -105,7 +105,7 @@ The non-countries have NULL values for Regions. There are 48 non-countries in th
 
 run_sql_and_return_html(cnx,"""
 select
-  `Long Name`, `Region`
+  `Long Name`
 from 
   world_bank_data.wdi_country
 where 
@@ -314,7 +314,7 @@ List the names of the countries that have no income group.
 
 run_sql_and_return_html(cnx,"""
 select 
-  `Short Name`, `Income Group`
+  `Short Name`, `Region`, `Income Group`
 from 
   wdi_country
 where 
@@ -350,7 +350,7 @@ commit;
 
 run_sql_and_return_html(cnx,"""
 select 
-  `Short Name`,  `Income Group`
+  `Short Name`,  `Region`, `Income Group`
 from 
   wdi_country
 where
@@ -408,7 +408,7 @@ SELECT
     SUM(CASE WHEN `Income Group` = 'Lower middle income' THEN 1 ELSE 0 END) AS 'Lower middle income',
     SUM(CASE WHEN `Income Group` = 'Low income' THEN 1 ELSE 0 END) AS 'Low income',
     SUM(CASE WHEN `Income Group` IS NULL OR `Income Group` NOT IN ('High income', 'Upper middle income', 'Lower middle income', 'Low income') THEN 1 ELSE 0 END) AS 'Other income',
-    COUNT(*) AS `Total Countries`
+    ROUND(COUNT(*),1) AS `Total Countries`
 FROM
     wdi_country
 GROUP BY
@@ -505,7 +505,8 @@ Display the Region-Income Group pairings that were missing in Task 14 because th
 run_sql_and_return_html(cnx,"""
 SELECT 
     r.`Region`,
-    i.`Income Group`
+    i.`Income Group`,
+    0 as `Country Count`
 FROM 
     (SELECT DISTINCT `Region` FROM wdi_country) r
 CROSS JOIN 
@@ -568,7 +569,7 @@ region_income_counts AS (
   SELECT 
     `Region`, 
     `Income Group`, 
-    COUNT(*) AS country_count
+    COUNT(*) AS `Country Count`
   FROM wdi_country
   WHERE `Region` IS NOT NULL AND `Income Group` IS NOT NULL
   GROUP BY `Region`, `Income Group`
@@ -576,11 +577,11 @@ region_income_counts AS (
 SELECT 
   ric.`Region`,
   ric.`Income Group`,
-  ric.country_count,
+  ric.`Country Count`,
   rt.region_count AS "Countries by Region",
   it.income_count AS "Countries by Income",
   tc.total AS "Total Countries",
-  ROUND(ric.country_count * 100.0 / tc.total, 2) AS "Percent"
+  ROUND(ric.`Country Count` * 100.0 / tc.total, 2) AS "Percent"
 FROM 
   region_income_counts ric
 JOIN 
@@ -627,7 +628,9 @@ SELECT
     ROUND(SUM(CASE WHEN r.`Income Group` = 'Lower middle income' THEN r.country_count ELSE 0 END) * 100.0 / MAX(t.total), 2) AS "Lower middle",
     ROUND(SUM(CASE WHEN r.`Income Group` = 'Low income' THEN r.country_count ELSE 0 END) * 100.0 / MAX(t.total), 2) AS "Low income",
     ROUND(SUM(CASE WHEN r.`Income Group` IS NULL OR r.`Income Group` NOT IN ('High income', 'Upper middle income', 'Lower middle income', 'Low income') 
-              THEN r.country_count ELSE 0 END) * 100.0 / MAX(t.total), 2) AS "Other"
+              THEN r.country_count ELSE 0 END) * 100.0 / MAX(t.total), 2) AS "Other",
+    SUM(r.country_count) AS "Region Country Count"
+    
 
 FROM 
     region_income_counts r
@@ -662,7 +665,7 @@ SELECT
     `Income Group`,
     COUNT(*) AS "Country Count",
     (SELECT total FROM total_count) AS "Total Countries",
-    ROUND(COUNT(*) * 100.0 / (SELECT total FROM total_count), 2) AS "Percent of Total Countries"
+    ROUND(COUNT(*) * 100.0 / (SELECT total FROM total_count), 1) AS "Percent of Total Countries"
 FROM 
     wdi_country
 GROUP BY 
