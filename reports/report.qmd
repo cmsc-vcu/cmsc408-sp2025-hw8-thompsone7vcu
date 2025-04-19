@@ -407,16 +407,12 @@ SELECT
     SUM(CASE WHEN `Income Group` = 'Upper middle income' THEN 1 ELSE 0 END) AS 'Upper middle income',
     SUM(CASE WHEN `Income Group` = 'Lower middle income' THEN 1 ELSE 0 END) AS 'Lower middle income',
     SUM(CASE WHEN `Income Group` = 'Low income' THEN 1 ELSE 0 END) AS 'Low income',
-    SUM(CASE WHEN `Income Group` IS NULL OR `Income Group` NOT IN ('High income', 'Upper middle income', 'Lower middle income', 'Low income') THEN 1 ELSE 0 END) AS 'Other income',
     
      (
         SUM(CASE WHEN `Income Group` = 'High income' THEN 1 ELSE 0 END) +
         SUM(CASE WHEN `Income Group` = 'Upper middle income' THEN 1 ELSE 0 END) +
         SUM(CASE WHEN `Income Group` = 'Lower middle income' THEN 1 ELSE 0 END) +
-        SUM(CASE WHEN `Income Group` = 'Low income' THEN 1 ELSE 0 END) +
-        SUM(CASE WHEN `Income Group` IS NULL 
-                 OR `Income Group` NOT IN ('High income', 'Upper middle income', 'Lower middle income', 'Low income') 
-                 THEN 1 ELSE 0 END)
+        SUM(CASE WHEN `Income Group` = 'Low income' THEN 1 ELSE 0 END)
     ) AS `Row Total`
 FROM
     wdi_country
@@ -615,7 +611,7 @@ Display the income percentage data for each region in a 2-D form, with columns f
 ## print table similar to the table in Task 15, with Income group in the
 ## columns, Region in the rows and Percent of total in each cell of the table.
 
-run_sql_and_return_df(cnx,"""
+run_sql_and_return_html(cnx,"""
 
 WITH total_countries AS (
     SELECT COUNT(*) AS total FROM wdi_country
