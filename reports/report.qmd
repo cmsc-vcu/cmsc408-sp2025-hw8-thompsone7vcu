@@ -408,7 +408,16 @@ SELECT
     SUM(CASE WHEN `Income Group` = 'Lower middle income' THEN 1 ELSE 0 END) AS 'Lower middle income',
     SUM(CASE WHEN `Income Group` = 'Low income' THEN 1 ELSE 0 END) AS 'Low income',
     SUM(CASE WHEN `Income Group` IS NULL OR `Income Group` NOT IN ('High income', 'Upper middle income', 'Lower middle income', 'Low income') THEN 1 ELSE 0 END) AS 'Other income',
-    ROUND(COUNT(*),1) AS `Total Countries`
+    
+     (
+        SUM(CASE WHEN `Income Group` = 'High income' THEN 1 ELSE 0 END) +
+        SUM(CASE WHEN `Income Group` = 'Upper middle income' THEN 1 ELSE 0 END) +
+        SUM(CASE WHEN `Income Group` = 'Lower middle income' THEN 1 ELSE 0 END) +
+        SUM(CASE WHEN `Income Group` = 'Low income' THEN 1 ELSE 0 END) +
+        SUM(CASE WHEN `Income Group` IS NULL 
+                 OR `Income Group` NOT IN ('High income', 'Upper middle income', 'Lower middle income', 'Low income') 
+                 THEN 1 ELSE 0 END)
+    ) AS `Row Total`
 FROM
     wdi_country
 GROUP BY
@@ -606,7 +615,7 @@ Display the income percentage data for each region in a 2-D form, with columns f
 ## print table similar to the table in Task 15, with Income group in the
 ## columns, Region in the rows and Percent of total in each cell of the table.
 
-run_sql_and_return_html(cnx,"""
+run_sql_and_return_df(cnx,"""
 
 WITH total_countries AS (
     SELECT COUNT(*) AS total FROM wdi_country
@@ -628,18 +637,17 @@ SELECT
     ROUND(SUM(CASE WHEN r.`Income Group` = 'Lower middle income' THEN r.country_count ELSE 0 END) * 100.0 / MAX(t.total), 2) AS "Lower middle",
     ROUND(SUM(CASE WHEN r.`Income Group` = 'Low income' THEN r.country_count ELSE 0 END) * 100.0 / MAX(t.total), 2) AS "Low income",
     ROUND(SUM(CASE WHEN r.`Income Group` IS NULL OR r.`Income Group` NOT IN ('High income', 'Upper middle income', 'Lower middle income', 'Low income') 
-              THEN r.country_count ELSE 0 END) * 100.0 / MAX(t.total), 2) AS "Other",
-    SUM(r.country_count) AS "Region Country Count"
-    
+              THEN r.country_count ELSE 0 END) * 100.0 / MAX(t.total), 2) AS "Other"
 
 FROM 
     region_income_counts r
 CROSS JOIN 
     total_countries t
 GROUP BY 
-    r.`Region`, r.`Income Group`
+    r.`Region`
 ORDER BY 
-    r.`Region`, r.`Income Group`;
+    r.`Region`;
+
 
 """)
 
